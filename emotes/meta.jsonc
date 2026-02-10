@@ -436,5 +436,7 @@
     "ylorp": "png",
     "zlorp": "png",
     "skeletonpls": "avif",
-    "sunglas": "avif"
+    "sunglas": "avif",
+    "true": "avif",
+    "false": "avif"
 }
