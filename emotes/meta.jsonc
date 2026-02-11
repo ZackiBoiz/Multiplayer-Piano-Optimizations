@@ -441,5 +441,7 @@
     "true": "avif",
     "false": "avif",
     "doc_2022-07-26_02-58-16": "avif",
-    "doc_2026-01-08_07-48-27": "avif"
+    "doc_2026-01-08_07-48-27": "avif",
+    "selected": "avif", // overlay
+    "selectedwide": "avif" // overlay
 }
