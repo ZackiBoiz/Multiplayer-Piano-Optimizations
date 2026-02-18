@@ -444,5 +444,7 @@
     "doc_2026-01-08_07-48-27": "avif",
     "selected": "avif", // overlay
     "selectedwide": "avif", // overlay
-    "wcrazy": "avif" // cheezburger0
+    "wcrazy": "avif", // cheezburger0
+    "m": "avif", // cheezburger0
+    "o": "avif"
 }
