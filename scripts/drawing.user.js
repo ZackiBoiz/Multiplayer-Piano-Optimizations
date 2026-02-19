@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.6.2
+// @version      2.6.3
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -33,6 +33,7 @@
 // @match        *://*.openmpp.tk/*
 // @match        *://*.mppkinda.com/*
 // @match        *://*.augustberchelmann.com/piano/*
+// @match        *://mpp.c30.life/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
@@ -117,9 +118,6 @@
     1. Tells clients to draw a stroked text
     area at (x, y) with options
 
-    strings are prefixed with <uleb128 length>
-    * Denotes multiple allowed
-
     ### OP 9: Stroked polygon
     - <uint8 op> <uint24 color> <uint8 transparency> <uleb128 lineWidth> <uleb128 lifeMs> <uleb128 fadeMs> <uleb128 length*> <<uint16 x> <uint16 y>>* <uint32 uuid>
     1. Tells clients to draw a stroked polygon
@@ -129,6 +127,9 @@
     - <uint8 op> <uint24 color> <uint8 transparency> <uleb128 lifeMs> <uleb128 fadeMs> <uleb128 length*> <<uint16 x> <uint16 y>>* <uint32 uuid>
     1. Tells clients to draw a filled polygon
     with a multitude of points
+
+    strings are prefixed with <uleb128 length>
+    * Denotes multiple allowed
 */
 
 (async () => {
@@ -161,7 +162,7 @@
                         `<p>Local: v${localVersion}</p>` +
                         `<p>Latest: v${remoteVersion}</p>` +
                         `<a href='https://greasyfork.org/scripts/${scriptId}' target='_blank' style='position: absolute; right: 0;bottom: 0; margin: 10px; font-size: 0.5rem;'>Open Greasy Fork to update?</a>`
-                })
+                });
             }
         }).catch(err => console.error("Update check failed:", err));
     }
@@ -1351,7 +1352,7 @@
 
             return uuid >>> 0;
         }
-        
+
         drawLines = (segments = [], { color = null, transparency = null, lineWidth = null, lifeMs = null, fadeMs = null, chain = undefined } = {}) => {
             if (!Array.isArray(segments) || !segments.length) return [];
 

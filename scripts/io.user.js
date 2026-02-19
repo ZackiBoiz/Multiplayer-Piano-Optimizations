@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Input/Output]
 // @namespace    https://tampermonkey.net/
-// @version      1.0.6
+// @version      1.0.7
 // @description  Saves and persists MIDI input/output options for you
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -33,6 +33,7 @@
 // @match        *://*.openmpp.tk/*
 // @match        *://*.mppkinda.com/*
 // @match        *://*.augustberchelmann.com/piano/*
+// @match        *://mpp.c30.life/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
@@ -71,7 +72,7 @@
                         `<p>Local: v${localVersion}</p>` +
                         `<p>Latest: v${remoteVersion}</p>` +
                         `<a href="https://greasyfork.org/scripts/${scriptId}" target="_blank" style="position: absolute; right: 0;bottom: 0; margin: 10px; font-size: 0.5rem;">Open Greasy Fork to update?</a>`
-                })
+                });
             }
         }).catch(err => console.error("Update check failed:", err));
     }
