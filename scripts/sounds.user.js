@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Sounds]
 // @namespace    https://tampermonkey.net/
-// @version      1.7.9
+// @version      1.7.10
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
 // @author       zackiboiz, cheezburger0, ccjit
 // @match        *://*.multiplayerpiano.com/*
@@ -357,10 +357,11 @@
         const me = MPP.client.user._id;
         const mention = msg.a.includes(`@${me}`);
         const replyMention = msg.r && replyTo[msg.r] === me;
+        const alwaysMention = localStorage.alwaysMention === "true";
 
         if (
             (mention || replyMention) &&
-            (!document.hasFocus() || MPP.client.getOwnParticipant().afk) &&
+            (alwaysMention || !document.hasFocus() || MPP.client.getOwnParticipant().afk) &&
             !(localStorage.chatMutes?.split(",") ?? []).includes(sender._id)
         ) {
             soundManager.playType("MENTION");
@@ -424,7 +425,17 @@
                             </fieldset>
                         </td>
                     </tr>
-                    <tr style="position: relative; left: 300px; top: -247px">
+                    <tr>
+                        <td style="vertical-align: top;">
+                            <fieldset style="border: 1px solid #ffffff; width:250px; padding: 0.25em; margin: 0;">
+                                <legend style="font-size: 18px; padding: 0 0.5em; white-space: nowrap;">Options</legend>
+                                <label style="display: block; margin: 0.5em 0; font-size: 13px;">
+                                    <input type="checkbox" id="always-mention" style="margin: 0 0.5em;" />Always mention
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
+                    <tr style="position: relative; left: 300px; top: -314px">
                         <td style="vertical-align: top;">
                             <fieldset style="border: 1px solid #ffffff; width:200px; padding: 0.25em; margin: 0;">
                                 <legend style="font-size: 18px; padding: 0 0.5em; white-space: nowrap;">Preview sounds</legend>
@@ -434,7 +445,7 @@
                             </fieldset>
                         </td>
                     </tr>
-                    <tr style="position: relative; left: 300px; top: -247px">
+                    <tr style="position: relative; left: 300px; top: -310px">
                         <td style="vertical-align: top;">
                             <fieldset id="volume-sliders" style="border: 1px solid #ffffff; width:20px; padding: 0.25em; margin: 0;"></fieldset>
                         </td>
@@ -481,6 +492,8 @@
                 </label>
             `);
         });
+
+        $("#always-mention").prop("checked", localStorage.alwaysMention === "true");
         $("#modal").fadeIn(250);
         $modal.show();
     }
@@ -529,6 +542,10 @@
         });
 
         this.value = "";
+    });
+
+    $(document).on("change", "#always-mention", function () {
+        localStorage.alwaysMention = this.checked ? "true" : "false";
     });
 
     $("#soundpack-submit").on("click", () => {
