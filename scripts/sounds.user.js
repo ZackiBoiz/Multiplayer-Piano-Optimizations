@@ -3,7 +3,9 @@
 // @namespace    https://tampermonkey.net/
 // @version      1.7.10
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
-// @author       zackiboiz, cheezburger0, ccjit
+// @author       zackiboiz
+// @contributor  cheezburger0
+// @contributor  sophb-ccjt (sophb.code@proton.me)
 // @match        *://*.multiplayerpiano.com/*
 // @match        *://*.multiplayerpiano.net/*
 // @match        *://*.multiplayerpiano.org/*
