@@ -5,7 +5,7 @@
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
 // @author       zackiboiz
 // @contributor  cheezburger0
-// @contributor  soph b (sophb.code@proton.me)
+// @contributor  sophb-ccjt (sophb.code@proton.me)
 // @match        *://*.multiplayerpiano.com/*
 // @match        *://*.multiplayerpiano.net/*
 // @match        *://*.multiplayerpiano.org/*
