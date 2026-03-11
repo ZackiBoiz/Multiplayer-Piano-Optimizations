@@ -4,7 +4,7 @@
 // @version      1.7.6
 // @description  Display emoticons and colors in chat!
 // @author       zackiboiz
-// @contributor  sophb-ccjt (sophb.code@proton.me)
+// @contributor  sophb-ccjt <sophb.code@proton.me>
 // @match        *://*.multiplayerpiano.com/*
 // @match        *://*.multiplayerpiano.net/*
 // @match        *://*.multiplayerpiano.org/*
