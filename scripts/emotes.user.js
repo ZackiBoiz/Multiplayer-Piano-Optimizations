@@ -3,7 +3,8 @@
 // @namespace    https://tampermonkey.net/
 // @version      1.7.6
 // @description  Display emoticons and colors in chat!
-// @author       zackiboiz, ccjit
+// @author       zackiboiz
+// @contributor  sophb-ccjt <sophb.code@proton.me>
 // @match        *://*.multiplayerpiano.com/*
 // @match        *://*.multiplayerpiano.net/*
 // @match        *://*.multiplayerpiano.org/*
