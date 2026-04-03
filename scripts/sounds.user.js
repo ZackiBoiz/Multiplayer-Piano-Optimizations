@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Sounds]
 // @namespace    https://tampermonkey.net/
-// @version      1.7.10
+// @version      1.7.11
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -98,9 +98,9 @@
         {
             NAME: "Default",
             AUTHOR: "Zacki",
-            MENTION: "https://files.catbox.moe/f5tzag.mp3",
-            JOIN: "https://files.catbox.moe/t3ztlz.mp3",
-            LEAVE: "https://files.catbox.moe/kmpz7e.mp3"
+            MENTION: "https://file.garden/aG8ZroGofF0QESvU/cdn/mppo/sounds/default-mention.mp3",
+            JOIN: "https://file.garden/aG8ZroGofF0QESvU/cdn/mppo/sounds/default-join.mp3",
+            LEAVE: "https://file.garden/aG8ZroGofF0QESvU/cdn/mppo/sounds/default-leave.mp3"
         },
         {
             NAME: "PRISM",
