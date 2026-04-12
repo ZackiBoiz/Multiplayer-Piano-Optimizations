@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.6.3
+// @version      2.6.4
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -2063,9 +2063,26 @@
             this.#pushOp({ op: 0 });
         }
 
+        #safeAtob(input) {
+            try {
+                if (typeof input !== "string") return null;
+
+                input = input.replace(/-/g, "+").replace(/_/g, "/");
+
+                const pad = input.length % 4;
+                if (pad) input += "=".repeat(4 - pad);
+
+                return atob(input);
+            } catch (e) {
+                console.warn("Invalid drawboard payload:", e);
+                return null;
+            }
+        }
+
         handleIncomingData = (packet) => {
             if (!packet?.data?.drawboard) return;
-            const payload = atob(packet.data.drawboard);
+            const payload = this.#safeAtob(packet?.data?.drawboard);
+            if (!payload) return;
 
             try {
                 const bytes = new Array(payload.length);
