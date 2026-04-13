@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.6.4
+// @version      2.7.0
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -99,7 +99,7 @@
     at center (cx, cy) with radii (rx, ry)
 
     ### OP 8: Text
-    - <uint8 op> <uint24 color> <uint8 transparency> <uleb128 fontSize> <uleb128 lifeMs> <uleb128 fadeMs> <uint16 x> <uint16 y> <string text> <bitfield8 options> <uint32 uuid>
+    - <uint8 op> <uint24 color> <uint8 transparency> <uleb128 fontSize> <uleb128 lifeMs> <uleb128 fadeMs> <uint16 x> <uint16 y> <uint16 rotation> <string text> <bitfield8 options> <uint32 uuid>
     - <bitfield8 options>:
         - <uint2 align>:
             0 - left
@@ -730,7 +730,7 @@
             return bytes;
         }
 
-        #buildTextPacket = (color, transparency, fontSize, lifeMs, fadeMs, x, y, text, options, uuid) => {
+        #buildTextPacket = (color, transparency, fontSize, lifeMs, fadeMs, x, y, rotation, text, options, uuid) => {
             const bytes = [];
             this.#writeUint8(bytes, 8);
             this.#writeColor(bytes, color);
@@ -740,6 +740,7 @@
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
             this.#writeUint16(bytes, x & 0xFFFF);
             this.#writeUint16(bytes, y & 0xFFFF);
+            this.#writeUint16(bytes, rotation & 0xFFFF);
             this.#writeString(bytes, text);
             this.#writeUint8(bytes, options & 0xFF);
             this.#writeUint32(bytes, uuid >>> 0);
@@ -941,6 +942,7 @@
                             item.fadeMs,
                             item.xu,
                             item.yu,
+                            item.rotationu,
                             item.text,
                             item.options,
                             item.uuid >>> 0
@@ -1167,40 +1169,52 @@
 
                         const x = shape.x * this.#canvas.width;
                         const y = shape.y * this.#canvas.height;
-                        this.#ctx.fillStyle = shape.color;
-                        this.#ctx.fillText(shape.text, x, y);
+                        const rotation = Number(shape.rotation) || 0;
+                        const angle = rotation * Math.PI * 2;
 
                         const metrics = this.#ctx.measureText(shape.text || "");
                         const textWidth = metrics.width || 0;
 
+                        let textHeight = fontSize;
+                        // sometimes this doesnt exist, bleugh. sucks to suck, suckas
+                        if (typeof metrics.actualBoundingBoxAscent === "number" && typeof metrics.actualBoundingBoxDescent === "number") {
+                            textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+                            if (!(Number.isFinite(textHeight)) || textHeight <= 0) textHeight = fontSize;
+                        }
+
+                        this.#ctx.save();
+                        this.#ctx.translate(x, y);
+                        this.#ctx.rotate(angle);
+                        this.#ctx.fillStyle = shape.color;
+                        this.#ctx.fillText(shape.text, 0, -textHeight / 2);
+
                         if (underline) {
-                            const uy = y + fontSize;
+                            const uy = -textHeight / 2 + fontSize;
                             this.#ctx.beginPath();
                             this.#ctx.lineWidth = Math.max(1, Math.floor(fontSize / 12) || 1);
                             this.#ctx.strokeStyle = shape.color;
-                            let startX = x;
-
-                            if (textAlign === Drawboard.TextAlign.CENTER) startX = x - textWidth / 2;
-                            else if (textAlign === Drawboard.TextAlign.RIGHT) startX = x - textWidth;
+                            let startX = 0;
+                            if (textAlign === Drawboard.TextAlign.CENTER) startX = -textWidth / 2;
+                            else if (textAlign === Drawboard.TextAlign.RIGHT) startX = -textWidth;
 
                             this.#ctx.moveTo(startX, uy);
                             this.#ctx.lineTo(startX + textWidth, uy);
                             this.#ctx.stroke();
                         }
                         if (lineThrough) {
-                            const ly = y + fontSize * 0.5;
+                            const ly = -textHeight / 2 + fontSize * 0.5;
                             this.#ctx.beginPath();
                             this.#ctx.lineWidth = Math.max(1, Math.floor(fontSize / 12) || 1);
                             this.#ctx.strokeStyle = shape.color;
-                            let startX = x;
-
-                            if (textAlign === Drawboard.TextAlign.CENTER) startX = x - textWidth / 2;
-                            else if (textAlign === Drawboard.TextAlign.RIGHT) startX = x - textWidth;
+                            let startX = 0;
+                            if (textAlign === Drawboard.TextAlign.CENTER) startX = -textWidth / 2;
+                            else if (textAlign === Drawboard.TextAlign.RIGHT) startX = -textWidth;
 
                             this.#ctx.moveTo(startX, ly);
                             this.#ctx.lineTo(startX + textWidth, ly);
                             this.#ctx.stroke();
                         }
+                        this.#ctx.restore();
                         break;
                     }
                     case "polygon": {
@@ -1654,10 +1668,11 @@
             return results;
         }
 
-        renderText = ({ x, y, text, color, transparency, fontSize, lifeMs, fadeMs, options, uuid = this.generateUUID(), owner = null } = {}) => {
+        renderText = ({ x, y, rotation, text, color, transparency, fontSize, lifeMs, fadeMs, options, uuid = this.generateUUID(), owner = null } = {}) => {
             const shape = {
                 type: "text",
                 x, y,
+                rotation: Math.clamp(0, Number(rotation) || 0, 1),
                 text: String(text),
                 color,
                 transparency: Math.clamp(0, transparency, 1),
@@ -1673,7 +1688,7 @@
             return uuid >>> 0;
         }
 
-        drawText = ({ x, y, text, color = null, transparency = null, fontSize = null, lineWidth = null, lifeMs = null, fadeMs = null, textAlign = null, fontStyle = [], fontFamily = null } = {}) => {
+        drawText = ({ x, y, rotation = 0, text, color = null, transparency = null, fontSize = null, lineWidth = null, lifeMs = null, fadeMs = null, textAlign = null, fontStyle = [], fontFamily = null } = {}) => {
             color = color ?? this.#color;
             transparency = transparency ?? this.#transparency;
             fontSize = (Number.isFinite(fontSize) ? fontSize : this.#fontSize) >>> 0;
@@ -1697,6 +1712,7 @@
             this.renderText({
                 x: nx,
                 y: ny,
+                rotation,
                 text,
                 color,
                 transparency,
@@ -1711,6 +1727,7 @@
 
             const xu = Math.round(nx * 65535) >>> 0;
             const yu = Math.round(ny * 65535) >>> 0;
+            const rotationu = Math.round(rotation * 65535) >>> 0;
 
             this.#pushOp({
                 op: 8,
@@ -1721,6 +1738,7 @@
                 fadeMs: fadeMs,
                 xu: xu & 0xFFFF,
                 yu: yu & 0xFFFF,
+                rotationu: rotationu & 0xFFFF,
                 text: text,
                 options: options & 0xFF,
                 uuid: uuid >>> 0
@@ -1910,8 +1928,6 @@
                         const align = opts & 0x03;
                         const bold = !!(opts & 0x04);
                         const italic = !!(opts & 0x08);
-                        // const underline = !!(opts & 0x10); // not needed for measurement
-                        // const lineThrough = !!(opts & 0x20);
                         const fontIndex = (opts >> 6) & 0x03;
 
                         const families = [
@@ -1939,19 +1955,39 @@
 
                         const px = shape.x * this.#canvas.width;
                         const py = shape.y * this.#canvas.height;
-                        let startX = px;
-                        if (align === 1) startX = px - textWidth;
-                        else if (align === 2) startX = px - textWidth / 2;
 
-                        const rect = {
-                            x: startX,
-                            y: py,
-                            w: textWidth,
-                            h: textHeight
-                        };
+                        let localStartX = 0;
+                        if (align === 1) localStartX = -textWidth;
+                        else if (align === 2) localStartX = -textWidth / 2;
 
-                        const nearestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
-                        const nearestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
+                        const corners = [
+                            { x: localStartX, y: -textHeight / 2 },
+                            { x: localStartX + textWidth, y: -textHeight / 2 },
+                            { x: localStartX, y: textHeight / 2 },
+                            { x: localStartX + textWidth, y: textHeight / 2 }
+                        ];
+
+                        const rotation = Number(shape.rotation) || 0;
+                        const angle = rotation * Math.PI * 2;
+                        const cos = Math.cos(angle);
+                        const sin = Math.sin(angle);
+
+                        const worldXs = [];
+                        const worldYs = [];
+                        for (const c of corners) {
+                            const rx = c.x * cos - c.y * sin;
+                            const ry = c.x * sin + c.y * cos;
+                            worldXs.push(px + rx);
+                            worldYs.push(py + ry);
+                        }
+
+                        const minX = Math.min(...worldXs);
+                        const maxX = Math.max(...worldXs);
+                        const minY = Math.min(...worldYs);
+                        const maxY = Math.max(...worldYs);
+
+                        const nearestX = Math.max(minX, Math.min(cx, maxX));
+                        const nearestY = Math.max(minY, Math.min(cy, maxY));
                         const dx = nearestX - cx;
                         const dy = nearestY - cy;
                         const distSq = dx * dx + dy * dy;
@@ -2322,15 +2358,17 @@
                             const fadeMs = this.#readULEB128(bytes, state);
                             const xu = this.#readUint16(bytes, state);
                             const yu = this.#readUint16(bytes, state);
+                            const rotationu = this.#readUint16(bytes, state);
                             const text = this.#readString(bytes, state);
                             const options = this.#readUint8(bytes, state);
                             const uuid = this.#readUint32(bytes, state);
-
                             const x = Math.clamp(0, xu / 65535, 1);
                             const y = Math.clamp(0, yu / 65535, 1);
+                            const rotation = Math.clamp(0, (rotationu || 0) / 65535, 1);
 
                             this.renderText({
                                 x, y,
+                                rotation,
                                 text,
                                 color,
                                 transparency,
