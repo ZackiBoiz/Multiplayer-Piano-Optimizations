@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.7.0
+// @version      2.7.1
 // @description  Draw on the screen!
 // @author       zackiboiz
+// @contributor  cheezburger0
 // @match        *://*.multiplayerpiano.com/*
 // @match        *://*.multiplayerpiano.net/*
 // @match        *://*.multiplayerpiano.org/*
@@ -383,7 +384,7 @@
                 this.#isCtrlDown = e.ctrlKey || e.metaKey;
             });
             document.addEventListener("mousedown", (e) => {
-                this.#updatePosition();
+                this.#updatePosition(e);
                 this.#clicking = true;
                 this.#localChainStarted = false;
 
@@ -392,7 +393,7 @@
                 }
             });
             document.addEventListener("mouseup", (e) => {
-                this.#updatePosition();
+                this.#updatePosition(e);
                 this.#clicking = false;
                 this.#flushOpBuffer();
             });
@@ -401,7 +402,7 @@
                 if (now - this.#lastMouseMoveAt < this.#mouseMoveThrottleMs) return;
                 this.#lastMouseMoveAt = now;
 
-                this.#updatePosition();
+                this.#updatePosition(e);
                 if (!this.#lastPosition) this.#lastPosition = this.#position;
                 if (this.#isShiftDown && this.#clicking) {
                     const start = this.#lastPosition;
@@ -794,12 +795,11 @@
             }]);
         }
 
-        #updatePosition = () => {
+        #updatePosition = (e) => {
             this.#lastPosition = this.#position;
-            const participant = this.participant;
             this.#position = {
-                x: Math.clamp(0, (participant?.x ?? 0), 100) / 100,
-                y: Math.clamp(0, (participant?.y ?? 0), 100) / 100
+                x: Math.clamp(0, (e.clientX / window.innerWidth) * 100, 100) / 100,
+                y: Math.clamp(0, (e.clientY / window.innerHeight) * 100, 100) / 100,
             };
         }
 
