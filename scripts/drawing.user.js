@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.7.1
+// @version      2.8.0
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -47,7 +47,7 @@
     {
         m: "custom",
         data: {
-            drawboard: btoa(<uleb128 count*> <<uint8 op> ...>*) // base64 encoded string
+            drawboard: btoa(<uleb128 count*> <<uint8 op> ...>* <uleb128 delayMs>*) // base64 encoded string
         },
         target: {
             mode: "subscribed"
@@ -624,7 +624,9 @@
             return Array.from(new Set(removed));
         }
 
-        #pushOp = (opObj) => { // could do some stuff here but dont need to atm
+        #pushOp = (opObj) => {
+            if (!opObj) return;
+            opObj.timestamp ??= Date.now();
             this.#opBuffer.push(opObj);
         }
 
@@ -807,6 +809,7 @@
             if (!this.#opBuffer.length) return;
 
             const builtOps = [];
+            const builtTimestamps = [];
             const buf = this.#opBuffer;
             let i = 0;
             while (i < buf.length) {
@@ -819,6 +822,7 @@
                 switch (item.op) {
                     case 0: {
                         builtOps.push(this.#buildClearUserPacket());
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -838,6 +842,7 @@
                             }
                         }
                         builtOps.push(this.#buildClearLinesPacket(uniq));
+                        builtTimestamps.push(Number(buf[i].timestamp) || Date.now());
                         i = j;
                         break;
                     }
@@ -854,6 +859,7 @@
                             item.y2u,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -867,6 +873,7 @@
                             item.xu,
                             item.yu
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -882,6 +889,7 @@
                             j++;
                         }
                         builtOps.push(this.#buildContinueChainPacket(allEntries));
+                        builtTimestamps.push(Number(buf[i].timestamp) || Date.now());
                         i = j;
                         break;
                     }
@@ -899,6 +907,7 @@
                             item.y3u,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -915,6 +924,7 @@
                             item.ryu,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -930,6 +940,7 @@
                             item.ryu,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -947,6 +958,7 @@
                             item.options,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -960,6 +972,7 @@
                             item.vertices,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -972,6 +985,7 @@
                             item.vertices,
                             item.uuid >>> 0
                         ));
+                        builtTimestamps.push(Number(item.timestamp) || Date.now());
                         i++;
                         break;
                     }
@@ -982,12 +996,20 @@
                 }
             }
 
-            // final payload
             const bytes = [];
             this.#writeULEB128(bytes, builtOps.length);
             for (const opBytes of builtOps) {
                 for (const b of opBytes) bytes.push(b);
             }
+
+            if (builtTimestamps.length) {
+                const now = builtTimestamps[0] || Date.now();
+                for (const timestamp of builtTimestamps) {
+                    const delta = Math.max(0, Math.floor(Number(timestamp) - now));
+                    this.#writeULEB128(bytes, delta);
+                }
+            }
+
             const finalPayload = String.fromCharCode(...bytes);
             this.#sendCustomData(finalPayload);
             this.#opBuffer.length = 0;
@@ -2129,16 +2151,13 @@
 
                 const senderId = (packet && packet.p) ? String(packet.p) : null;
 
+                const parsedOps = [];
                 for (let opIndex = 0; opIndex < opCount; opIndex++) {
                     const type = this.#readUint8(bytes, state);
 
                     switch (type) {
                         case 0: {
-                            if (!senderId) {
-                                console.warn("Clear user received but no sender provided.");
-                            } else {
-                                this.#removeLinesByOwner(senderId);
-                            }
+                            parsedOps.push({ type: 0 });
                             break;
                         }
                         case 1: {
@@ -2148,7 +2167,7 @@
                                 const u = this.#readUint32(bytes, state);
                                 uuids.push(u >>> 0);
                             }
-                            this.#removeShapesByUUIDs(uuids);
+                            parsedOps.push({ type: 1, uuids });
                             break;
                         }
                         case 2: {
@@ -2161,22 +2180,20 @@
                             const y1u = this.#readUint16(bytes, state);
                             const x2u = this.#readUint16(bytes, state);
                             const y2u = this.#readUint16(bytes, state);
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            const x1 = Math.clamp(0, x1u / 65535, 1);
-                            const y1 = Math.clamp(0, y1u / 65535, 1);
-                            const x2 = Math.clamp(0, x2u / 65535, 1);
-                            const y2 = Math.clamp(0, y2u / 65535, 1);
-
-                            this.renderLine({
-                                x1, y1, x2, y2,
+                            parsedOps.push({
+                                type: 2,
                                 color,
                                 transparency,
                                 lineWidth,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                x1u,
+                                y1u,
+                                x2u,
+                                y2u,
+                                uuid
                             });
                             break;
                         }
@@ -2188,74 +2205,29 @@
                             const fadeMs = this.#readULEB128(bytes, state);
                             const xu = this.#readUint16(bytes, state);
                             const yu = this.#readUint16(bytes, state);
-                            const entry = {
-                                x: xu >>> 0,
-                                y: yu >>> 0,
+
+                            parsedOps.push({
+                                type: 3,
                                 color,
                                 transparency,
                                 lineWidth,
                                 lifeMs,
-                                fadeMs
-                            };
-                            if (senderId) this.#chains.set(senderId, entry);
+                                fadeMs,
+                                xu: xu >>> 0,
+                                yu: yu >>> 0
+                            });
                             break;
                         }
                         case 4: {
                             const len = this.#readULEB128(bytes, state);
-                            if (!senderId) {
-                                for (let k = 0; k < len; k++) {
-                                    const xu = this.#readUint16(bytes, state);
-                                    const yu = this.#readUint16(bytes, state);
-                                    const uuid = this.#readUint32(bytes, state);
-                                    // no sender ... ignore for now
-                                }
-                            } else {
-                                let chain = this.#chains.get(senderId);
-                                for (let k = 0; k < len; k++) {
-                                    const xu = this.#readUint16(bytes, state);
-                                    const yu = this.#readUint16(bytes, state);
-                                    const uuid = this.#readUint32(bytes, state);
-
-                                    const x = xu >>> 0;
-                                    const y = yu >>> 0;
-                                    if (!chain) {
-                                        chain = {
-                                            x,
-                                            y,
-                                            color: "#000000",
-                                            transparency: 1,
-                                            lineWidth: 3,
-                                            lifeMs: 5000,
-                                            fadeMs: 3000
-                                        };
-                                        this.#chains.set(senderId, chain);
-                                        continue;
-                                    }
-
-                                    const x1n = Math.clamp(0, chain.x / 65535, 1);
-                                    const y1n = Math.clamp(0, chain.y / 65535, 1);
-                                    const x2n = Math.clamp(0, x / 65535, 1);
-                                    const y2n = Math.clamp(0, y / 65535, 1);
-
-                                    this.renderLine({
-                                        x1: x1n,
-                                        y1: y1n,
-                                        x2: x2n,
-                                        y2: y2n,
-                                        color: chain.color,
-                                        transparency: chain.transparency,
-                                        lineWidth: chain.lineWidth,
-                                        lifeMs: chain.lifeMs,
-                                        fadeMs: chain.fadeMs,
-                                        uuid: uuid >>> 0,
-                                        owner: senderId
-                                    });
-
-                                    chain.x = x;
-                                    chain.y = y;
-                                }
-                                this.#chains.set(senderId, chain);
+                            const entries = [];
+                            for (let k = 0; k < len; k++) {
+                                const xu = this.#readUint16(bytes, state);
+                                const yu = this.#readUint16(bytes, state);
+                                const uuid = this.#readUint32(bytes, state) >>> 0;
+                                entries.push({ xu: xu >>> 0, yu: yu >>> 0, uuid });
                             }
+                            parsedOps.push({ type: 4, entries });
                             break;
                         }
                         case 5: {
@@ -2269,23 +2241,21 @@
                             const y2u = this.#readUint16(bytes, state);
                             const x3u = this.#readUint16(bytes, state);
                             const y3u = this.#readUint16(bytes, state);
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            const x1 = Math.clamp(0, x1u / 65535, 1);
-                            const y1 = Math.clamp(0, y1u / 65535, 1);
-                            const x2 = Math.clamp(0, x2u / 65535, 1);
-                            const y2 = Math.clamp(0, y2u / 65535, 1);
-                            const x3 = Math.clamp(0, x3u / 65535, 1);
-                            const y3 = Math.clamp(0, y3u / 65535, 1);
-
-                            this.renderTriangle({
-                                x1, y1, x2, y2, x3, y3,
+                            parsedOps.push({
+                                type: 5,
                                 color,
                                 transparency,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                x1u,
+                                y1u,
+                                x2u,
+                                y2u,
+                                x3u,
+                                y3u,
+                                uuid
                             });
                             break;
                         }
@@ -2299,24 +2269,20 @@
                             const cyu = this.#readUint16(bytes, state);
                             const rxu = this.#readUint16(bytes, state);
                             const ryu = this.#readUint16(bytes, state);
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            const cx = Math.clamp(0, cxu / 65535, 1);
-                            const cy = Math.clamp(0, cyu / 65535, 1);
-                            const rx = Math.clamp(0, rxu / 65535, 1);
-                            const ry = Math.clamp(0, ryu / 65535, 1);
-
-                            this.renderEllipse({
-                                cx, cy,
-                                rx, ry,
+                            parsedOps.push({
+                                type: 6,
                                 color,
                                 transparency,
                                 lineWidth,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                subType: "stroke",
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                cxu,
+                                cyu,
+                                rxu,
+                                ryu,
+                                uuid
                             });
                             break;
                         }
@@ -2329,24 +2295,19 @@
                             const cyu = this.#readUint16(bytes, state);
                             const rxu = this.#readUint16(bytes, state);
                             const ryu = this.#readUint16(bytes, state);
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            const cx = Math.clamp(0, cxu / 65535, 1);
-                            const cy = Math.clamp(0, cyu / 65535, 1);
-                            const rx = Math.clamp(0, rxu / 65535, 1);
-                            const ry = Math.clamp(0, ryu / 65535, 1);
-
-                            this.renderEllipse({
-                                cx, cy,
-                                rx, ry,
+                            parsedOps.push({
+                                type: 7,
                                 color,
                                 transparency,
-                                lineWidth: 1,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                subType: "fill",
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                cxu,
+                                cyu,
+                                rxu,
+                                ryu,
+                                uuid
                             });
                             break;
                         }
@@ -2361,24 +2322,21 @@
                             const rotationu = this.#readUint16(bytes, state);
                             const text = this.#readString(bytes, state);
                             const options = this.#readUint8(bytes, state);
-                            const uuid = this.#readUint32(bytes, state);
-                            const x = Math.clamp(0, xu / 65535, 1);
-                            const y = Math.clamp(0, yu / 65535, 1);
-                            const rotation = Math.clamp(0, (rotationu || 0) / 65535, 1);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            this.renderText({
-                                x, y,
-                                rotation,
-                                text,
+                            parsedOps.push({
+                                type: 8,
                                 color,
                                 transparency,
                                 fontSize,
-                                lineWidth: 1,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
+                                lifeMs,
+                                fadeMs,
+                                xu,
+                                yu,
+                                rotationu,
+                                text,
                                 options,
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                uuid
                             });
                             break;
                         }
@@ -2394,23 +2352,19 @@
                             for (let i = 0; i < len; i++) {
                                 const xu = this.#readUint16(bytes, state);
                                 const yu = this.#readUint16(bytes, state);
-                                const x = Math.clamp(0, xu / 65535, 1);
-                                const y = Math.clamp(0, yu / 65535, 1);
-
-                                vertices.push({ x, y });
+                                vertices.push({ xu: xu >>> 0, yu: yu >>> 0 });
                             }
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            this.renderPolygon({
-                                vertices,
+                            parsedOps.push({
+                                type: 9,
                                 color,
                                 transparency,
                                 lineWidth,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                subType: "stroke",
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                vertices,
+                                uuid
                             });
                             break;
                         }
@@ -2425,29 +2379,266 @@
                             for (let i = 0; i < len; i++) {
                                 const xu = this.#readUint16(bytes, state);
                                 const yu = this.#readUint16(bytes, state);
-                                const x = Math.clamp(0, xu / 65535, 1);
-                                const y = Math.clamp(0, yu / 65535, 1);
-
-                                vertices.push({ x, y });
+                                vertices.push({ xu: xu >>> 0, yu: yu >>> 0 });
                             }
-                            const uuid = this.#readUint32(bytes, state);
+                            const uuid = this.#readUint32(bytes, state) >>> 0;
 
-                            this.renderPolygon({
-                                vertices,
+                            parsedOps.push({
+                                type: 10,
                                 color,
                                 transparency,
-                                lifeMs: lifeMs,
-                                fadeMs: fadeMs,
-                                subType: "fill",
-                                uuid: uuid >>> 0,
-                                owner: senderId
+                                lifeMs,
+                                fadeMs,
+                                vertices,
+                                uuid
                             });
                             break;
                         }
                         default: {
                             console.warn("Unknown drawboard op code:", type);
+                            parsedOps.push({ type: -1 });
                             break;
                         }
+                    }
+                }
+
+                const delays = new Array(opCount).fill(0);
+                for (let d = 0; d < opCount; d++) {
+                    if (state.i < bytes.length) {
+                        try {
+                            delays[d] = this.#readULEB128(bytes, state);
+                        } catch (e) {
+                            delays[d] = 0;
+                        }
+                    } else {
+                        delays[d] = 0;
+                    }
+                }
+
+                const executeParsedOp = (op) => {
+                    switch (op.type) {
+                        case 0: {
+                            if (!senderId) {
+                                console.warn("Clear user received but no sender provided.");
+                            } else {
+                                this.#removeLinesByOwner(senderId);
+                            }
+                            break;
+                        }
+                        case 1: {
+                            this.#removeShapesByUUIDs(op.uuids || []);
+                            break;
+                        }
+                        case 2: {
+                            const x1 = Math.clamp(0, (op.x1u || 0) / 65535, 1);
+                            const y1 = Math.clamp(0, (op.y1u || 0) / 65535, 1);
+                            const x2 = Math.clamp(0, (op.x2u || 0) / 65535, 1);
+                            const y2 = Math.clamp(0, (op.y2u || 0) / 65535, 1);
+
+                            this.renderLine({
+                                x1, y1, x2, y2,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lineWidth: op.lineWidth,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 3: {
+                            const entry = {
+                                x: op.xu >>> 0,
+                                y: op.yu >>> 0,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lineWidth: op.lineWidth,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs
+                            };
+                            if (senderId) this.#chains.set(senderId, entry);
+                            break;
+                        }
+                        case 4: {
+                            const entries = op.entries || [];
+                            if (!senderId) {
+                                // no sender ... ignore
+                                break;
+                            }
+
+                            let chain = this.#chains.get(senderId);
+                            for (let k = 0; k < entries.length; k++) {
+                                const xu = entries[k].xu !== undefined ? entries[k].xu : entries[k].x;
+                                const yu = entries[k].yu !== undefined ? entries[k].yu : entries[k].y;
+                                const uuid = entries[k].uuid >>> 0;
+
+                                const x = xu >>> 0;
+                                const y = yu >>> 0;
+                                if (!chain) {
+                                    chain = {
+                                        x,
+                                        y,
+                                        color: "#000000",
+                                        transparency: 1,
+                                        lineWidth: 3,
+                                        lifeMs: 5000,
+                                        fadeMs: 3000
+                                    };
+                                    this.#chains.set(senderId, chain);
+                                    continue;
+                                }
+
+                                const x1n = Math.clamp(0, chain.x / 65535, 1);
+                                const y1n = Math.clamp(0, chain.y / 65535, 1);
+                                const x2n = Math.clamp(0, x / 65535, 1);
+                                const y2n = Math.clamp(0, y / 65535, 1);
+
+                                this.renderLine({
+                                    x1: x1n,
+                                    y1: y1n,
+                                    x2: x2n,
+                                    y2: y2n,
+                                    color: chain.color,
+                                    transparency: chain.transparency,
+                                    lineWidth: chain.lineWidth,
+                                    lifeMs: chain.lifeMs,
+                                    fadeMs: chain.fadeMs,
+                                    uuid: uuid >>> 0,
+                                    owner: senderId
+                                });
+
+                                chain.x = x;
+                                chain.y = y;
+                            }
+                            this.#chains.set(senderId, chain);
+                            break;
+                        }
+                        case 5: {
+                            const x1 = Math.clamp(0, (op.x1u || 0) / 65535, 1);
+                            const y1 = Math.clamp(0, (op.y1u || 0) / 65535, 1);
+                            const x2 = Math.clamp(0, (op.x2u || 0) / 65535, 1);
+                            const y2 = Math.clamp(0, (op.y2u || 0) / 65535, 1);
+                            const x3 = Math.clamp(0, (op.x3u || 0) / 65535, 1);
+                            const y3 = Math.clamp(0, (op.y3u || 0) / 65535, 1);
+
+                            this.renderTriangle({
+                                x1, y1, x2, y2, x3, y3,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 6: {
+                            const cx = Math.clamp(0, (op.cxu || 0) / 65535, 1);
+                            const cy = Math.clamp(0, (op.cyu || 0) / 65535, 1);
+                            const rx = Math.clamp(0, (op.rxu || 0) / 65535, 1);
+                            const ry = Math.clamp(0, (op.ryu || 0) / 65535, 1);
+
+                            this.renderEllipse({
+                                cx, cy,
+                                rx, ry,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lineWidth: op.lineWidth,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                subType: "stroke",
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 7: {
+                            const cx = Math.clamp(0, (op.cxu || 0) / 65535, 1);
+                            const cy = Math.clamp(0, (op.cyu || 0) / 65535, 1);
+                            const rx = Math.clamp(0, (op.rxu || 0) / 65535, 1);
+                            const ry = Math.clamp(0, (op.ryu || 0) / 65535, 1);
+
+                            this.renderEllipse({
+                                cx, cy,
+                                rx, ry,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lineWidth: 1,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                subType: "fill",
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 8: {
+                            const x = Math.clamp(0, (op.xu || 0) / 65535, 1);
+                            const y = Math.clamp(0, (op.yu || 0) / 65535, 1);
+                            const rotation = Math.clamp(0, ((op.rotationu || 0) / 65535), 1);
+
+                            this.renderText({
+                                x, y,
+                                rotation,
+                                text: op.text,
+                                color: op.color,
+                                transparency: op.transparency,
+                                fontSize: op.fontSize,
+                                lineWidth: 1,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                options: op.options,
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 9: {
+                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 65535, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 65535, 1) }));
+
+                            this.renderPolygon({
+                                vertices,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lineWidth: op.lineWidth,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                subType: "stroke",
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        case 10: {
+                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 65535, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 65535, 1) }));
+
+                            this.renderPolygon({
+                                vertices,
+                                color: op.color,
+                                transparency: op.transparency,
+                                lifeMs: op.lifeMs,
+                                fadeMs: op.fadeMs,
+                                subType: "fill",
+                                uuid: op.uuid >>> 0,
+                                owner: senderId
+                            });
+                            break;
+                        }
+                        default: {
+                            break;
+                        }
+                    }
+                };
+
+                for (let idx = 0; idx < parsedOps.length; idx++) {
+                    const delay = Math.max(0, Number(delays[idx] || 0));
+                    const op = parsedOps[idx];
+                    if (!op) continue;
+                    if (delay <= 0) {
+                        executeParsedOp(op);
+                    } else {
+                        setTimeout(() => executeParsedOp(op), delay);
                     }
                 }
             } catch (err) {
