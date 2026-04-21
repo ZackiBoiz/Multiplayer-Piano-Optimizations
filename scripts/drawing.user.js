@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.8.0
+// @version      2.8.1
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -38,8 +38,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
-// @downloadURL  https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
-// @updateURL    https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
+// @downloadURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
+// @updateURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
 // ==/UserScript==
 
 /*
@@ -1072,6 +1072,7 @@
         }
 
         #draw = () => {
+
             if (!this.enabled || !Drawboard.connected) {
                 requestAnimationFrame(this.#draw);
                 return;
@@ -1092,9 +1093,11 @@
             this.#shapeBuffer = kept;
             this.#shapeBuffer.sort((a, b) => a.timestamp - b.timestamp);
 
+            const botsHidden = localStorage.hideBotUsers === "true";
             for (let i = 0; i < this.#shapeBuffer.length; i++) {
                 const shape = this.#shapeBuffer[i];
                 if (this.#drawingMutes.includes(shape.owner)) continue; // user could unhide if they want to see it back
+                if (botsHidden && shape.bot) continue; // user can hide bots through client settings to hide bot drawings
 
                 const timestamp = shape.timestamp;
                 const lifeMs = shape.lifeMs;
@@ -1295,7 +1298,7 @@
             this.#fontSize = (Number.isFinite(fontSize) ? fontSize : this.#fontSize) >>> 0;
         }
 
-        renderLine = ({ x1, y1, x2, y2, color, transparency, lineWidth, lifeMs, fadeMs, uuid = this.generateUUID(), owner = null } = {}) => {
+        renderLine = ({ x1, y1, x2, y2, color, transparency, lineWidth, lifeMs, fadeMs, uuid = this.generateUUID(), owner = null, bot = false } = {}) => {
             const shape = {
                 type: "line",
                 x1, y1,
@@ -1307,7 +1310,8 @@
                 fadeMs,
                 timestamp: Date.now(),
                 uuid: uuid >>> 0,
-                owner: owner || null
+                owner: owner || null,
+                bot: bot || false
             };
             this.#shapeBuffer.push(shape);
             return uuid >>> 0;
@@ -1339,7 +1343,8 @@
                 lifeMs: lifeMs,
                 fadeMs: fadeMs,
                 uuid: uuid,
-                owner: MPP?.client?.participantId || null
+                owner: MPP?.client?.participantId || null,
+                bot: false
             });
 
             const x1u = Math.round(nx1 * 65535) >>> 0;
@@ -1452,7 +1457,8 @@
                         lifeMs: s.lifeMs ?? this.#lifeMs,
                         fadeMs: s.fadeMs ?? this.#fadeMs,
                         uuid: uuid,
-                        owner: MPP?.client?.participantId || null
+                        owner: MPP?.client?.participantId || null,
+                        bot: false
                     });
 
                     entries.push({
@@ -2150,6 +2156,7 @@
                 const opCount = this.#readULEB128(bytes, state);
 
                 const senderId = (packet && packet.p) ? String(packet.p) : null;
+                const bot = (packet && packet.u) ? packet.u.tag?.text === "BOT" : false;
 
                 const parsedOps = [];
                 for (let opIndex = 0; opIndex < opCount; opIndex++) {
@@ -2443,7 +2450,8 @@
                                 lifeMs: op.lifeMs,
                                 fadeMs: op.fadeMs,
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2505,7 +2513,8 @@
                                     lifeMs: chain.lifeMs,
                                     fadeMs: chain.fadeMs,
                                     uuid: uuid >>> 0,
-                                    owner: senderId
+                                    owner: senderId,
+                                    bot
                                 });
 
                                 chain.x = x;
@@ -2529,7 +2538,8 @@
                                 lifeMs: op.lifeMs,
                                 fadeMs: op.fadeMs,
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2549,7 +2559,8 @@
                                 fadeMs: op.fadeMs,
                                 subType: "stroke",
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2569,7 +2580,8 @@
                                 fadeMs: op.fadeMs,
                                 subType: "fill",
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2590,7 +2602,8 @@
                                 fadeMs: op.fadeMs,
                                 options: op.options,
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2606,7 +2619,8 @@
                                 fadeMs: op.fadeMs,
                                 subType: "stroke",
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
@@ -2621,7 +2635,8 @@
                                 fadeMs: op.fadeMs,
                                 subType: "fill",
                                 uuid: op.uuid >>> 0,
-                                owner: senderId
+                                owner: senderId,
+                                bot
                             });
                             break;
                         }
