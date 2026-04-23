@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Edit]
 // @namespace    https://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.2
 // @description  Edit your messages in chat! (edited)
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -273,6 +273,8 @@
                 edited.textContent = "(edited)";
                 msgElem.insertAdjacentElement("beforeend", edited);
             }
+
+            messages.find(m => m.id === id).a = message;
         }
 
         async function scanAndAdd() {
@@ -334,6 +336,7 @@
                     }, 100);
 
                     $("#chat-input")[0].placeholder = "Editing a message" + (msg.m === "dm" ? " in a DM" : "");
+                    $("#chat-input")[0].value = msg.a;
                 });
             }
         }
