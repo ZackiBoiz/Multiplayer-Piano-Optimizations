@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Edit]
 // @namespace    https://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.3
 // @description  Edit your messages in chat! (edited)
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -260,6 +260,10 @@
         }
 
         function editMessage(id, message) {
+            const msg = messages.find(m => m.id === id);
+            if (!msg || msg.a === message) return false;
+            msg.a = message;
+
             const msgElem = document.querySelector(`#msg-${id}`);
             if (!msgElem) return;
             const spanMsg = msgElem.querySelector("span.message");
@@ -274,7 +278,7 @@
                 msgElem.insertAdjacentElement("beforeend", edited);
             }
 
-            messages.find(m => m.id === id).a = message;
+            return true;
         }
 
         async function scanAndAdd() {
@@ -345,8 +349,7 @@
         const originalStartDM = MPP.chat.startDM;
         MPP.chat.send = function (message) {
             if (!isEditing) return originalChatSend.apply(this, arguments);
-
-            editMessage(editingId, message);
+            if (!editMessage(editingId, message)) return;
 
             MPP.client.sendArray([{
                 m: "custom",
