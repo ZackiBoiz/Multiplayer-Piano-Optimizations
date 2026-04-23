@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Edit]
 // @namespace    https://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  Edit your messages in chat! (edited)
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -37,9 +37,62 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
+// @downloadURL  https://update.greasyfork.org/scripts/575160/Multiplayer%20Piano%20Optimizations%20%5BEdit%5D.user.js
+// @updateURL    https://update.greasyfork.org/scripts/575160/Multiplayer%20Piano%20Optimizations%20%5BEdit%5D.meta.js
 // ==/UserScript==
 
 (async () => {
+    const dl = GM_info.script.downloadURL || GM_info.script.updateURL || GM_info.script.homepageURL || "";
+    const match = dl.match(/greasyfork\.org\/scripts\/(\d+)/);
+    if (!match) {
+        console.warn("Could not find Greasy Fork script ID in downloadURL/updateURL/homepageURL:", dl);
+    } else {
+        const scriptId = match[1];
+        const localVersion = GM_info.script.version;
+        const apiUrl = `https://greasyfork.org/scripts/${scriptId}.json?_=${Date.now()}`;
+
+        fetch(apiUrl, {
+            mode: "cors",
+            headers: {
+                Accept: "application/json"
+            }
+        }).then(r => {
+            if (!r.ok) throw new Error("Failed to fetch Greasy Fork data.");
+            return r.json();
+        }).then(data => {
+            const remoteVersion = data.version;
+            if (compareVersions(localVersion, remoteVersion) < 0) {
+                new MPP.Notification({
+                    "m": "notification",
+                    "duration": 15000,
+                    "title": "Update Available",
+                    "html": "<p>A new version of this script is available!</p>" +
+                        `<p style='margin-top: 10px;'>Script: ${GM_info.script.name}</p>` +
+                        `<p>Local: v${localVersion}</p>` +
+                        `<p>Latest: v${remoteVersion}</p>` +
+                        `<a href='https://greasyfork.org/scripts/${scriptId}' target='_blank' style='position: absolute; right: 0;bottom: 0; margin: 10px; font-size: 0.5rem;'>Open Greasy Fork to update?</a>`
+                });
+            }
+        }).catch(err => console.error("Update check failed:", err));
+    }
+
+    function compareVersions(a, b) {
+        const pa = a.split(".").map(n => parseInt(n, 10) || 0);
+        const pb = b.split(".").map(n => parseInt(n, 10) || 0);
+        const len = Math.max(pa.length, pb.length);
+        for (let i = 0; i < len; i++) {
+            if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+            if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+        }
+        return 0;
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    await sleep(1000);
+
+
     const MAX_MESSAGE_LENGTH = 512;
     const DB_NAME = "mppo-edit";
     const DB_VERSION = 1;
@@ -148,7 +201,7 @@
             for (const edit of saved) {
                 const msg = messages.find(m => m.id === edit.id);
                 if (!msg) continue;
-                
+
                 editMessage(msg.id, edit.message);
             }
 
