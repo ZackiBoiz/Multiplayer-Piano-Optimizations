@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.8.1
+// @version      2.8.2
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -453,7 +453,7 @@
 
                             const muteLinesButton = document.createElement("div");
                             muteLinesButton.className = "menu-item";
-                            muteLinesButton.textContent = `${muted ? "Unhide" : "Hide"} Drawings`;
+                            muteLinesButton.textContent = `${muted ? "Show" : "Hide"} Drawings`;
                             menu.insertAdjacentElement("beforeend", muteLinesButton);
 
                             muteLinesButton.addEventListener("click", (e) => {
@@ -626,7 +626,8 @@
 
         #pushOp = (opObj) => {
             if (!opObj) return;
-            opObj.timestamp ??= Date.now();
+            const now = Date.now();
+            opObj.timestamp ??= now;
             this.#opBuffer.push(opObj);
         }
 
@@ -1003,10 +1004,13 @@
             }
 
             if (builtTimestamps.length) {
-                const now = builtTimestamps[0] || Date.now();
-                for (const timestamp of builtTimestamps) {
-                    const delta = Math.max(0, Math.floor(Number(timestamp) - now));
+                let prev = Number(builtTimestamps[0]) || Date.now();
+                this.#writeULEB128(bytes, 0);
+                for (let k = 1; k < builtTimestamps.length; k++) {
+                    const ts = Number(builtTimestamps[k]) || prev;
+                    const delta = Math.max(0, Math.floor(ts - prev));
                     this.#writeULEB128(bytes, delta);
+                    prev = ts;
                 }
             }
 
@@ -1072,7 +1076,6 @@
         }
 
         #draw = () => {
-
             if (!this.enabled || !Drawboard.connected) {
                 requestAnimationFrame(this.#draw);
                 return;
@@ -2422,6 +2425,10 @@
                     }
                 }
 
+                for (let d = 1; d < delays.length; d++) {
+                    delays[d] = Number(delays[d] || 0) + Number(delays[d - 1] || 0);
+                }
+
                 const executeParsedOp = (op) => {
                     switch (op.type) {
                         case 0: {
@@ -2648,6 +2655,7 @@
 
                 for (let idx = 0; idx < parsedOps.length; idx++) {
                     const delay = Math.max(0, Number(delays[idx] || 0));
+                    // console.log(delay);
                     const op = parsedOps[idx];
                     if (!op) continue;
                     if (delay <= 0) {
