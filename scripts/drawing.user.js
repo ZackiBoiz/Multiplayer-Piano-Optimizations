@@ -38,8 +38,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
-// @downloadURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
-// @updateURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
+// @downloadURL  https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
+// @updateURL    https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
 // ==/UserScript==
 
 /*
@@ -47,7 +47,7 @@
     {
         m: "custom",
         data: {
-            drawboard: btoa(<uleb128 count*> <<uint8 op> ...>* <uleb128 delayMs>*) // base64 encoded string
+            drawboard: btoa(<uleb128 count*> <<uint8 op> ...>* <uleb128 delayMs>?*) // base64 encoded string
         },
         target: {
             mode: "subscribed"
@@ -131,6 +131,7 @@
 
     strings are prefixed with <uleb128 length>
     * Denotes multiple allowed
+    ? Denotes optional
 */
 
 (async () => {
@@ -649,7 +650,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 2);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lineWidth)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
@@ -665,7 +666,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 3);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lineWidth)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
@@ -690,7 +691,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 5);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
             this.#writeUint16(bytes, x1 & 0xFFFF);
@@ -707,7 +708,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 6);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lineWidth)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
@@ -723,7 +724,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 7);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
             this.#writeUint16(bytes, cx & 0xFFFF);
@@ -738,7 +739,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 8);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fontSize)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
@@ -755,7 +756,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 9);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lineWidth)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
@@ -772,7 +773,7 @@
             const bytes = [];
             this.#writeUint8(bytes, 10);
             this.#writeColor(bytes, color);
-            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 255) & 0xFF);
+            this.#writeUint8(bytes, Math.floor(Math.clamp(0, transparency, 1) * 0xFF) & 0xFF);
             this.#writeULEB128(bytes, Math.max(0, Math.floor(lifeMs)));
             this.#writeULEB128(bytes, Math.max(0, Math.floor(fadeMs)));
             this.#writeULEB128(bytes, vertices.length);
@@ -1350,10 +1351,10 @@
                 bot: false
             });
 
-            const x1u = Math.round(nx1 * 65535) >>> 0;
-            const y1u = Math.round(ny1 * 65535) >>> 0;
-            const x2u = Math.round(nx2 * 65535) >>> 0;
-            const y2u = Math.round(ny2 * 65535) >>> 0;
+            const x1u = Math.round(nx1 * 0xFFFF) >>> 0;
+            const y1u = Math.round(ny1 * 0xFFFF) >>> 0;
+            const x2u = Math.round(nx2 * 0xFFFF) >>> 0;
+            const y2u = Math.round(ny2 * 0xFFFF) >>> 0;
 
             if (chain) {
                 if (!this.#localChainStarted) {
@@ -1428,8 +1429,8 @@
 
             if (useChain) {
                 const first = segs[0];
-                const xu = Math.round(first.x1 * 65535);
-                const yu = Math.round(first.y1 * 65535);
+                const xu = Math.round(first.x1 * 0xFFFF);
+                const yu = Math.round(first.y1 * 0xFFFF);
 
                 this.#pushOp({
                     op: 3,
@@ -1465,8 +1466,8 @@
                     });
 
                     entries.push({
-                        x: Math.round(s.x2 * 65535) & 0xFFFF,
-                        y: Math.round(s.y2 * 65535) & 0xFFFF,
+                        x: Math.round(s.x2 * 0xFFFF) & 0xFFFF,
+                        y: Math.round(s.y2 * 0xFFFF) & 0xFFFF,
                         uuid: uuid >>> 0
                     });
                 }
@@ -1546,12 +1547,12 @@
                 owner: MPP?.client?.participantId || null
             });
 
-            const x1u = Math.round(nx1 * 65535) >>> 0;
-            const y1u = Math.round(ny1 * 65535) >>> 0;
-            const x2u = Math.round(nx2 * 65535) >>> 0;
-            const y2u = Math.round(ny2 * 65535) >>> 0;
-            const x3u = Math.round(nx3 * 65535) >>> 0;
-            const y3u = Math.round(ny3 * 65535) >>> 0;
+            const x1u = Math.round(nx1 * 0xFFFF) >>> 0;
+            const y1u = Math.round(ny1 * 0xFFFF) >>> 0;
+            const x2u = Math.round(nx2 * 0xFFFF) >>> 0;
+            const y2u = Math.round(ny2 * 0xFFFF) >>> 0;
+            const x3u = Math.round(nx3 * 0xFFFF) >>> 0;
+            const y3u = Math.round(ny3 * 0xFFFF) >>> 0;
 
             this.#pushOp({
                 op: 5,
@@ -1641,10 +1642,10 @@
                 owner: MPP?.client?.participantId || null
             });
 
-            const cxu = Math.round(ncx * 65535) >>> 0;
-            const cyu = Math.round(ncy * 65535) >>> 0;
-            const rxu = Math.round(nrx * 65535) >>> 0;
-            const ryu = Math.round(nry * 65535) >>> 0;
+            const cxu = Math.round(ncx * 0xFFFF) >>> 0;
+            const cyu = Math.round(ncy * 0xFFFF) >>> 0;
+            const rxu = Math.round(nrx * 0xFFFF) >>> 0;
+            const ryu = Math.round(nry * 0xFFFF) >>> 0;
 
             if (fill) {
                 this.#pushOp({
@@ -1756,9 +1757,9 @@
                 owner: MPP?.client?.participantId || null
             });
 
-            const xu = Math.round(nx * 65535) >>> 0;
-            const yu = Math.round(ny * 65535) >>> 0;
-            const rotationu = Math.round(rotation * 65535) >>> 0;
+            const xu = Math.round(nx * 0xFFFF) >>> 0;
+            const yu = Math.round(ny * 0xFFFF) >>> 0;
+            const rotationu = Math.round(rotation * 0xFFFF) >>> 0;
 
             this.#pushOp({
                 op: 8,
@@ -1827,8 +1828,8 @@
             });
 
             const vu = sv.map(v => ({
-                xu: (Math.round(v.x * 65535) >>> 0) & 0xFFFF,
-                yu: (Math.round(v.y * 65535) >>> 0) & 0xFFFF
+                xu: (Math.round(v.x * 0xFFFF) >>> 0) & 0xFFFF,
+                yu: (Math.round(v.y * 0xFFFF) >>> 0) & 0xFFFF
             }));
 
             if (fill) {
@@ -2151,15 +2152,15 @@
             const payload = this.#safeAtob(packet?.data?.drawboard);
             if (!payload) return;
 
+            const senderId = (packet && packet.p) ? String(packet.p) : null;
+            const bot = (packet && packet.u) ? packet.u.tag?.text === "BOT" : false;
+
             try {
                 const bytes = new Array(payload.length);
                 for (let i = 0; i < payload.length; i++) bytes[i] = payload.charCodeAt(i);
 
                 const state = { i: 0 };
                 const opCount = this.#readULEB128(bytes, state);
-
-                const senderId = (packet && packet.p) ? String(packet.p) : null;
-                const bot = (packet && packet.u) ? packet.u.tag?.text === "BOT" : false;
 
                 const parsedOps = [];
                 for (let opIndex = 0; opIndex < opCount; opIndex++) {
@@ -2182,7 +2183,7 @@
                         }
                         case 2: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lineWidth = this.#readULEB128(bytes, state);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
@@ -2209,7 +2210,7 @@
                         }
                         case 3: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lineWidth = this.#readULEB128(bytes, state);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
@@ -2242,7 +2243,7 @@
                         }
                         case 5: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
                             const x1u = this.#readUint16(bytes, state);
@@ -2271,7 +2272,7 @@
                         }
                         case 6: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lineWidth = this.#readULEB128(bytes, state);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
@@ -2298,7 +2299,7 @@
                         }
                         case 7: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
                             const cxu = this.#readUint16(bytes, state);
@@ -2323,7 +2324,7 @@
                         }
                         case 8: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const fontSize = this.#readULEB128(bytes, state);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
@@ -2352,7 +2353,7 @@
                         }
                         case 9: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lineWidth = this.#readULEB128(bytes, state);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
@@ -2380,7 +2381,7 @@
                         }
                         case 10: {
                             const color = this.#readColor(bytes, state);
-                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 255, 1);
+                            const transparency = Math.clamp(0, this.#readUint8(bytes, state) / 0xFF, 1);
                             const lifeMs = this.#readULEB128(bytes, state);
                             const fadeMs = this.#readULEB128(bytes, state);
                             const len = this.#readULEB128(bytes, state);
@@ -2405,9 +2406,9 @@
                             break;
                         }
                         default: {
-                            console.warn("Unknown drawboard op code:", type);
+                            console.warn(senderId, "Unknown drawboard op code:", type);
                             parsedOps.push({ type: -1 });
-                            break;
+                            return;
                         }
                     }
                 }
@@ -2444,10 +2445,10 @@
                             break;
                         }
                         case 2: {
-                            const x1 = Math.clamp(0, (op.x1u || 0) / 65535, 1);
-                            const y1 = Math.clamp(0, (op.y1u || 0) / 65535, 1);
-                            const x2 = Math.clamp(0, (op.x2u || 0) / 65535, 1);
-                            const y2 = Math.clamp(0, (op.y2u || 0) / 65535, 1);
+                            const x1 = Math.clamp(0, (op.x1u || 0) / 0xFFFF, 1);
+                            const y1 = Math.clamp(0, (op.y1u || 0) / 0xFFFF, 1);
+                            const x2 = Math.clamp(0, (op.x2u || 0) / 0xFFFF, 1);
+                            const y2 = Math.clamp(0, (op.y2u || 0) / 0xFFFF, 1);
 
                             this.renderLine({
                                 x1, y1, x2, y2,
@@ -2504,10 +2505,10 @@
                                     continue;
                                 }
 
-                                const x1n = Math.clamp(0, chain.x / 65535, 1);
-                                const y1n = Math.clamp(0, chain.y / 65535, 1);
-                                const x2n = Math.clamp(0, x / 65535, 1);
-                                const y2n = Math.clamp(0, y / 65535, 1);
+                                const x1n = Math.clamp(0, chain.x / 0xFFFF, 1);
+                                const y1n = Math.clamp(0, chain.y / 0xFFFF, 1);
+                                const x2n = Math.clamp(0, x / 0xFFFF, 1);
+                                const y2n = Math.clamp(0, y / 0xFFFF, 1);
 
                                 this.renderLine({
                                     x1: x1n,
@@ -2531,12 +2532,12 @@
                             break;
                         }
                         case 5: {
-                            const x1 = Math.clamp(0, (op.x1u || 0) / 65535, 1);
-                            const y1 = Math.clamp(0, (op.y1u || 0) / 65535, 1);
-                            const x2 = Math.clamp(0, (op.x2u || 0) / 65535, 1);
-                            const y2 = Math.clamp(0, (op.y2u || 0) / 65535, 1);
-                            const x3 = Math.clamp(0, (op.x3u || 0) / 65535, 1);
-                            const y3 = Math.clamp(0, (op.y3u || 0) / 65535, 1);
+                            const x1 = Math.clamp(0, (op.x1u || 0) / 0xFFFF, 1);
+                            const y1 = Math.clamp(0, (op.y1u || 0) / 0xFFFF, 1);
+                            const x2 = Math.clamp(0, (op.x2u || 0) / 0xFFFF, 1);
+                            const y2 = Math.clamp(0, (op.y2u || 0) / 0xFFFF, 1);
+                            const x3 = Math.clamp(0, (op.x3u || 0) / 0xFFFF, 1);
+                            const y3 = Math.clamp(0, (op.y3u || 0) / 0xFFFF, 1);
 
                             this.renderTriangle({
                                 x1, y1, x2, y2, x3, y3,
@@ -2551,10 +2552,10 @@
                             break;
                         }
                         case 6: {
-                            const cx = Math.clamp(0, (op.cxu || 0) / 65535, 1);
-                            const cy = Math.clamp(0, (op.cyu || 0) / 65535, 1);
-                            const rx = Math.clamp(0, (op.rxu || 0) / 65535, 1);
-                            const ry = Math.clamp(0, (op.ryu || 0) / 65535, 1);
+                            const cx = Math.clamp(0, (op.cxu || 0) / 0xFFFF, 1);
+                            const cy = Math.clamp(0, (op.cyu || 0) / 0xFFFF, 1);
+                            const rx = Math.clamp(0, (op.rxu || 0) / 0xFFFF, 1);
+                            const ry = Math.clamp(0, (op.ryu || 0) / 0xFFFF, 1);
 
                             this.renderEllipse({
                                 cx, cy,
@@ -2572,10 +2573,10 @@
                             break;
                         }
                         case 7: {
-                            const cx = Math.clamp(0, (op.cxu || 0) / 65535, 1);
-                            const cy = Math.clamp(0, (op.cyu || 0) / 65535, 1);
-                            const rx = Math.clamp(0, (op.rxu || 0) / 65535, 1);
-                            const ry = Math.clamp(0, (op.ryu || 0) / 65535, 1);
+                            const cx = Math.clamp(0, (op.cxu || 0) / 0xFFFF, 1);
+                            const cy = Math.clamp(0, (op.cyu || 0) / 0xFFFF, 1);
+                            const rx = Math.clamp(0, (op.rxu || 0) / 0xFFFF, 1);
+                            const ry = Math.clamp(0, (op.ryu || 0) / 0xFFFF, 1);
 
                             this.renderEllipse({
                                 cx, cy,
@@ -2593,9 +2594,9 @@
                             break;
                         }
                         case 8: {
-                            const x = Math.clamp(0, (op.xu || 0) / 65535, 1);
-                            const y = Math.clamp(0, (op.yu || 0) / 65535, 1);
-                            const rotation = Math.clamp(0, ((op.rotationu || 0) / 65535), 1);
+                            const x = Math.clamp(0, (op.xu || 0) / 0xFFFF, 1);
+                            const y = Math.clamp(0, (op.yu || 0) / 0xFFFF, 1);
+                            const rotation = Math.clamp(0, ((op.rotationu || 0) / 0xFFFF), 1);
 
                             this.renderText({
                                 x, y,
@@ -2615,7 +2616,7 @@
                             break;
                         }
                         case 9: {
-                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 65535, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 65535, 1) }));
+                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 0xFFFF, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 0xFFFF, 1) }));
 
                             this.renderPolygon({
                                 vertices,
@@ -2632,7 +2633,7 @@
                             break;
                         }
                         case 10: {
-                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 65535, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 65535, 1) }));
+                            const vertices = (op.vertices || []).map(v => ({ x: Math.clamp(0, (v.xu || v.x || 0) / 0xFFFF, 1), y: Math.clamp(0, (v.yu || v.y || 0) / 0xFFFF, 1) }));
 
                             this.renderPolygon({
                                 vertices,
@@ -2665,7 +2666,7 @@
                     }
                 }
             } catch (err) {
-                console.warn("Failed to parse incoming drawboard payload:", err);
+                console.warn(senderId, "Failed to parse incoming drawboard payload:", err);
             }
         }
     }
