@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.9.1
+// @version      2.9.2
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -2738,6 +2738,11 @@
         }]);
 
         if (MPP?.client?.on) {
+            MPP.client.on("hi", () => {
+                MPP.client.sendArray([{
+                    m: "+custom"
+                }]);
+            });
             MPP.client.on("custom", (packet) => {
                 if (!packet || !packet.data) return;
                 if (packet.data.drawboard || packet.data === "drawboard") {
