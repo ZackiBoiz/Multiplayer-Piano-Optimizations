@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.8.2
+// @version      2.9.0
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -500,26 +500,44 @@
             bytes.push(val & 0xFF);
         }
 
-        #readUint16 = (bytes, state) => {
+        #readUint16 = (bytes, state, bigEndian = false) => {
             if (state.i + 2 > bytes.length) throw new Error("Unexpected end of payload (uint16).");
-            const v = bytes[state.i] | (bytes[state.i + 1] << 8);
+            let v;
+            if (bigEndian) {
+                v = (bytes[state.i] << 8) | bytes[state.i + 1];
+            } else {
+                v = bytes[state.i] | (bytes[state.i + 1] << 8);
+            }
             state.i += 2;
             return v >>> 0;
         }
-        #writeUint16 = (bytes, val) => {
+        #writeUint16 = (bytes, val, bigEndian = false) => {
             const v = val >>> 0;
-            bytes.push(v & 0xFF, (v >>> 8) & 0xFF);
+            if (bigEndian) {
+                bytes.push((v >>> 8) & 0xFF, v & 0xFF);
+            } else {
+                bytes.push(v & 0xFF, (v >>> 8) & 0xFF);
+            }
         }
 
-        #readUint32 = (bytes, state) => {
+        #readUint32 = (bytes, state, bigEndian = false) => {
             if (state.i + 4 > bytes.length) throw new Error("Unexpected end of payload (uint32).");
-            const v = (bytes[state.i] | (bytes[state.i + 1] << 8) | (bytes[state.i + 2] << 16) | (bytes[state.i + 3] << 24)) >>> 0;
+            let v;
+            if (bigEndian) {
+                v = (bytes[state.i] << 24) | (bytes[state.i + 1] << 16) | (bytes[state.i + 2] << 8) | bytes[state.i + 3];
+            } else {
+                v = (bytes[state.i] | (bytes[state.i + 1] << 8) | (bytes[state.i + 2] << 16) | (bytes[state.i + 3] << 24));
+            }
             state.i += 4;
-            return v;
+            return v >>> 0;
         }
-        #writeUint32 = (bytes, val) => {
+        #writeUint32 = (bytes, val, bigEndian = false) => {
             const v = val >>> 0;
-            bytes.push(v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF);
+            if (bigEndian) {
+                bytes.push((v >>> 24) & 0xFF, (v >>> 16) & 0xFF, (v >>> 8) & 0xFF, v & 0xFF);
+            } else {
+                bytes.push(v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF);
+            }
         }
 
         #readULEB128 = (bytes, state) => {
@@ -544,26 +562,34 @@
             bytes.push(val & 0x7F);
         }
 
-        #readColor = (bytes, state) => {
+        #readColor = (bytes, state, bigEndian = false) => {
             if (state.i + 3 > bytes.length) throw new Error("Unexpected end of payload (color).");
-            const r = bytes[state.i++];
-            const g = bytes[state.i++];
-            const b = bytes[state.i++];
-            return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+            let part;
+            if (bigEndian) {
+                part = [bytes[state.i++], bytes[state.i++], bytes[state.i++]];
+            } else {
+                const b = bytes[state.i++], g = bytes[state.i++], r = bytes[state.i++];
+                part = [r, g, b];
+            }
+            return "#" + part.map(x => x.toString(16).padStart(2, "0")).join("");
         }
-        #writeColor = (bytes, hex) => {
+
+        #writeColor = (bytes, hex, bigEndian = false) => {
             let part = [0, 0, 0];
             if (hex) {
                 if (hex.startsWith("#")) hex = hex.slice(1);
                 if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
                 const num = parseInt(hex, 16) || 0;
-                part = [(num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF];
+                const r = (num >> 16) & 0xFF;
+                const g = (num >> 8) & 0xFF;
+                const b = num & 0xFF;
+                if (bigEndian) part = [r, g, b];
+                else part = [b, g, r];
             }
-
             bytes.push(...part);
         }
 
-        #readString = (bytes, state) => {
+        #readString = (bytes, state, bigEndian = false) => {
             const len = this.#readULEB128(bytes, state);
             if (state.i + len > bytes.length) throw new Error("Unexpected end of payload (string).");
             const slice = bytes.slice(state.i, state.i + len);
@@ -573,17 +599,22 @@
 
             return text;
         }
-        #writeString = (bytes, strOrBytes) => {
+        #writeString = (bytes, strOrBytes, length = true, bigEndian = false) => {
             if (strOrBytes instanceof Uint8Array) {
-                this.#writeULEB128(bytes, strOrBytes.length);
+                if (length) this.#writeULEB128(bytes, strOrBytes.length);
                 for (const b of strOrBytes) bytes.push(b);
                 return;
             }
 
             const textEncoder = new TextEncoder();
             const buf = textEncoder.encode(String(strOrBytes));
-            this.#writeULEB128(bytes, buf.length);
+            if (length) this.#writeULEB128(bytes, buf.length);
             for (const b of buf) bytes.push(b);
+        }
+
+        #writeBytes = (bytes, rawBytes, length = true, bigEndian = false) => {
+            if (length) this.#writeULEB128(bytes, rawBytes.length);
+            for (const b of rawBytes) bytes.push(b);
         }
 
         generateUUID = () => {
@@ -788,15 +819,30 @@
         #sendCustomData = (payload) => {
             if (!MPP?.client?.sendArray || !Drawboard.connected) return;
 
-            MPP.client.sendArray([{
+            // MPP.client.sendArray([{
+            //     m: "custom",
+            //     data: {
+            //         drawboard: btoa(payload)
+            //     },
+            //     target: {
+            //         mode: "subscribed"
+            //     }
+            // }]);
+
+            const bytes = [];
+            const meta = JSON.stringify({
                 m: "custom",
-                data: {
-                    drawboard: btoa(payload)
-                },
+                data: "drawboard",
                 target: {
                     mode: "subscribed"
                 }
-            }]);
+            });
+            this.#writeUint32(bytes, meta.length, true);
+            this.#writeString(bytes, meta, false);
+            this.#writeBytes(bytes, payload, false);
+
+            const buffer = new Uint8Array(bytes).buffer;
+            MPP.client.ws.send(buffer);
         }
 
         #updatePosition = (e) => {
@@ -1015,7 +1061,8 @@
                 }
             }
 
-            const finalPayload = String.fromCharCode(...bytes);
+            // const finalPayload = String.fromCharCode(...bytes);
+            const finalPayload = bytes;
             this.#sendCustomData(finalPayload);
             this.#opBuffer.length = 0;
         }
@@ -2147,9 +2194,14 @@
             }
         }
 
-        handleIncomingData = (packet) => {
-            if (!packet?.data?.drawboard) return;
-            const payload = this.#safeAtob(packet?.data?.drawboard);
+        handleIncomingData = (packet, binary = false) => {
+            let payload;
+            if (binary) {
+                payload = Array.from(new Uint8Array(packet.binary));
+            } else {
+                if (!packet?.data?.drawboard) return;
+                payload = this.#safeAtob(packet?.data?.drawboard);
+            }
             if (!payload) return;
 
             const senderId = (packet && packet.p) ? String(packet.p) : null;
@@ -2157,7 +2209,9 @@
 
             try {
                 const bytes = new Array(payload.length);
-                for (let i = 0; i < payload.length; i++) bytes[i] = payload.charCodeAt(i);
+                for (let i = 0; i < payload.length; i++) {
+                    bytes[i] = typeof payload === "string" ? payload.charCodeAt(i) : payload[i];
+                }
 
                 const state = { i: 0 };
                 const opCount = this.#readULEB128(bytes, state);
@@ -2656,7 +2710,6 @@
 
                 for (let idx = 0; idx < parsedOps.length; idx++) {
                     const delay = Math.max(0, Number(delays[idx] || 0));
-                    // console.log(delay);
                     const op = parsedOps[idx];
                     if (!op) continue;
                     if (delay <= 0) {
@@ -2681,9 +2734,10 @@
 
         if (MPP?.client?.on) {
             MPP.client.on("custom", (packet) => {
+                console.log(packet);
                 if (!packet || !packet.data) return;
-                if (packet.data.drawboard) {
-                    MPP.drawboard.handleIncomingData(packet);
+                if (packet.data.drawboard || packet.data === "drawboard") {
+                    MPP.drawboard.handleIncomingData(packet, packet.binary instanceof ArrayBuffer);
                 }
             });
         }
