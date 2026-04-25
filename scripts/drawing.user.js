@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.9.4
+// @version      2.9.5
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -816,30 +816,32 @@
         #sendCustomData = (payload) => {
             if (!MPP?.client?.sendArray || !Drawboard.connected) return;
 
-            // MPP.client.sendArray([{
-            //     m: "custom",
-            //     data: {
-            //         drawboard: btoa(payload)
-            //     },
-            //     target: {
-            //         mode: "subscribed"
-            //     }
-            // }]);
+            if (MPP.client.decodeBinaryMessage) {
+                const bytes = [];
+                const meta = JSON.stringify({
+                    m: "custom",
+                    data: "drawboard",
+                    target: {
+                        mode: "subscribed"
+                    }
+                });
+                this.#writeUint32(bytes, meta.length, true);
+                this.#writeString(bytes, meta, false);
+                this.#writeBytes(bytes, payload, false);
 
-            const bytes = [];
-            const meta = JSON.stringify({
-                m: "custom",
-                data: "drawboard",
-                target: {
-                    mode: "subscribed"
-                }
-            });
-            this.#writeUint32(bytes, meta.length, true);
-            this.#writeString(bytes, meta, false);
-            this.#writeBytes(bytes, payload, false);
-
-            const buffer = new Uint8Array(bytes).buffer;
-            MPP.client.ws.send(buffer);
+                const buffer = new Uint8Array(bytes).buffer;
+                MPP.client.ws.send(buffer);
+            } else {
+                MPP.client.sendArray([{
+                    m: "custom",
+                    data: {
+                        drawboard: btoa(String.fromCharCode(...payload))
+                    },
+                    target: {
+                        mode: "subscribed"
+                    }
+                }]);
+            }
         }
 
         #updatePosition = (e) => {
@@ -1058,9 +1060,7 @@
                 }
             }
 
-            // const finalPayload = String.fromCharCode(...bytes);
-            const finalPayload = bytes;
-            this.#sendCustomData(finalPayload);
+            this.#sendCustomData(bytes);
             this.#opBuffer.length = 0;
         }
 
