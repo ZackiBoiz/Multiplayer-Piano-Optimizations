@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.9.3
+// @version      2.9.4
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -38,8 +38,8 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
 // @license      MIT
-// @downloadURL  https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
-// @updateURL    https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
+// @downloadURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.user.js
+// @updateURL https://update.greasyfork.org/scripts/561021/Multiplayer%20Piano%20Optimizations%20%5BDrawing%5D.meta.js
 // ==/UserScript==
 
 /*
@@ -1543,7 +1543,7 @@
             return results;
         }
 
-        renderTriangle = ({ x1, y1, x2, y2, x3, y3, color, transparency, lifeMs, fadeMs, uuid = this.generateUUID(), owner = null } = {}) => {
+        renderTriangle = ({ x1, y1, x2, y2, x3, y3, color, transparency, lifeMs, fadeMs, uuid = this.generateUUID(), owner = null, bot = false } = {}) => {
             const shape = {
                 type: "triangle",
                 x1, y1,
@@ -1555,7 +1555,8 @@
                 fadeMs,
                 timestamp: Date.now(),
                 uuid: uuid >>> 0,
-                owner: owner || null
+                owner: owner || null,
+                bot: bot || false
             };
             this.#shapeBuffer.push(shape);
             return uuid >>> 0;
@@ -1638,7 +1639,7 @@
             return results;
         }
 
-        renderEllipse = ({ cx, cy, rx, ry, color, transparency, lineWidth, lifeMs, fadeMs, subType = "fill", uuid = this.generateUUID(), owner = null } = {}) => {
+        renderEllipse = ({ cx, cy, rx, ry, color, transparency, lineWidth, lifeMs, fadeMs, subType = "fill", uuid = this.generateUUID(), owner = null, bot = false } = {}) => {
             const shape = {
                 type: "ellipse",
                 subType,
@@ -1651,7 +1652,8 @@
                 fadeMs,
                 timestamp: Date.now(),
                 uuid: uuid >>> 0,
-                owner: owner || null
+                owner: owner || null,
+                bot: bot || false
             };
             this.#shapeBuffer.push(shape);
             return uuid >>> 0;
@@ -1744,7 +1746,7 @@
             return results;
         }
 
-        renderText = ({ x, y, rotation, text, color, transparency, fontSize, lifeMs, fadeMs, options, uuid = this.generateUUID(), owner = null } = {}) => {
+        renderText = ({ x, y, rotation, text, color, transparency, fontSize, lifeMs, fadeMs, options, uuid = this.generateUUID(), owner = null, bot = false } = {}) => {
             const shape = {
                 type: "text",
                 x, y,
@@ -1758,7 +1760,8 @@
                 options: options & 0xFF,
                 timestamp: Date.now(),
                 uuid: uuid >>> 0,
-                owner: owner || null
+                owner: owner || null,
+                bot: bot || false
             };
             this.#shapeBuffer.push(shape);
             return uuid >>> 0;
@@ -1823,7 +1826,7 @@
             return uuid >>> 0;
         }
 
-        renderPolygon = ({ vertices = [], color, transparency, lineWidth, lifeMs, fadeMs, subType = "fill", uuid = this.generateUUID(), owner = null } = {}) => {
+        renderPolygon = ({ vertices = [], color, transparency, lineWidth, lifeMs, fadeMs, subType = "fill", uuid = this.generateUUID(), owner = null, bot = false } = {}) => {
             const shape = {
                 type: "polygon",
                 subType,
@@ -1835,7 +1838,8 @@
                 fadeMs,
                 timestamp: Date.now(),
                 uuid: uuid >>> 0,
-                owner: owner || null
+                owner: owner || null,
+                bot: bot || false
             };
             this.#shapeBuffer.push(shape);
             return uuid >>> 0;
