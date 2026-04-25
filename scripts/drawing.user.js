@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.9.2
+// @version      2.9.3
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -567,30 +567,22 @@
             bytes.push(val & 0x7F);
         }
 
-        #readColor = (bytes, state, bigEndian = false) => {
+        #readColor = (bytes, state) => {
             if (state.i + 3 > bytes.length) throw new Error("Unexpected end of payload (color).");
-            let part;
-            if (bigEndian) {
-                part = [bytes[state.i++], bytes[state.i++], bytes[state.i++]];
-            } else {
-                const b = bytes[state.i++], g = bytes[state.i++], r = bytes[state.i++];
-                part = [r, g, b];
-            }
-            return "#" + part.map(x => x.toString(16).padStart(2, "0")).join("");
+            const r = bytes[state.i++];
+            const g = bytes[state.i++];
+            const b = bytes[state.i++];
+            return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
         }
-
-        #writeColor = (bytes, hex, bigEndian = false) => {
+        #writeColor = (bytes, hex) => {
             let part = [0, 0, 0];
             if (hex) {
                 if (hex.startsWith("#")) hex = hex.slice(1);
                 if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
                 const num = parseInt(hex, 16) || 0;
-                const r = (num >> 16) & 0xFF;
-                const g = (num >> 8) & 0xFF;
-                const b = num & 0xFF;
-                if (bigEndian) part = [r, g, b];
-                else part = [b, g, r];
+                part = [(num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF];
             }
+
             bytes.push(...part);
         }
 
