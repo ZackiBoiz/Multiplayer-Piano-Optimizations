@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Drawing]
 // @namespace    https://tampermonkey.net/
-// @version      2.9.0
+// @version      2.9.1
 // @description  Draw on the screen!
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -53,6 +53,10 @@
             mode: "subscribed"
         }
     }
+
+    OR with the new binary `custom`:
+    <uint32be length>{"m":"custom","data":"drawboard","target":{"mode":"subscribed"}}<uleb128 count*> <<uint8 op> ...>* <uleb128 delayMs>?*
+
 
 
     ### OP 0: Clear user
@@ -129,6 +133,7 @@
     1. Tells clients to draw a filled polygon
     with a multitude of points
 
+    all are assumed little-endian unless explicitly stated (ex. <uint32> vs. <uint32be>)
     strings are prefixed with <uleb128 length>
     * Denotes multiple allowed
     ? Denotes optional
@@ -2734,7 +2739,6 @@
 
         if (MPP?.client?.on) {
             MPP.client.on("custom", (packet) => {
-                console.log(packet);
                 if (!packet || !packet.data) return;
                 if (packet.data.drawboard || packet.data === "drawboard") {
                     MPP.drawboard.handleIncomingData(packet, packet.binary instanceof ArrayBuffer);
