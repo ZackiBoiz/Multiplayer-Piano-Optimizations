@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Sounds]
 // @namespace    https://tampermonkey.net/
-// @version      1.7.11
+// @version      1.7.12
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -38,6 +38,7 @@
 // @match        *://mpp.c30.life/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
+// @require      https://code.jquery.com/jquery-2.2.4.min.js
 // @license      MIT
 // @downloadURL  https://update.greasyfork.org/scripts/542502/Multiplayer%20Piano%20Optimizations%20%5BSounds%5D.user.js
 // @updateURL    https://update.greasyfork.org/scripts/542502/Multiplayer%20Piano%20Optimizations%20%5BSounds%5D.meta.js
