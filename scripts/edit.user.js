@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Edit]
 // @namespace    https://tampermonkey.net/
-// @version      1.0.3
+// @version      1.0.4
 // @description  Edit your messages in chat! (edited)
 // @author       zackiboiz
 // @match        *://*.multiplayerpiano.com/*
@@ -36,6 +36,7 @@
 // @match        *://mpp.c30.life/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=multiplayerpiano.net
 // @grant        GM_info
+// @require      https://code.jquery.com/jquery-2.2.4.min.js
 // @license      MIT
 // @downloadURL  https://update.greasyfork.org/scripts/575160/Multiplayer%20Piano%20Optimizations%20%5BEdit%5D.user.js
 // @updateURL    https://update.greasyfork.org/scripts/575160/Multiplayer%20Piano%20Optimizations%20%5BEdit%5D.meta.js
