@@ -43,7 +43,7 @@
 - Documentation found in [`docs/`](https://github.com/ZackiBoiz/Multiplayer-Piano-Optimizations/blob/main/docs/drawing.md)
 - Node.JS module found in [`modules/`](https://github.com/ZackiBoiz/Multiplayer-Piano-Optimizations/blob/main/modules/Drawing.js)
 
-# Edit
+### Edit
 - Edit your messages in chat
 - Click the pencil button next to your chat messages to edit them
 - Persistent edits
