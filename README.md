@@ -40,4 +40,12 @@
   - Polygon (stroked/filled)
   - Text
 - Also found on [Greasy Fork](https://greasyfork.org/en/scripts/561021)
+- Documentation found in [`docs/`](https://github.com/ZackiBoiz/Multiplayer-Piano-Optimizations/blob/main/docs/drawing.md)
 - Node.JS module found in [`modules/`](https://github.com/ZackiBoiz/Multiplayer-Piano-Optimizations/blob/main/modules/Drawing.js)
+
+# Edit
+- Edit your messages in chat
+- Click the pencil button next to your chat messages to edit them
+- Persistent edits
+  - Note: This is only persistent if your client has observed edits
+- Also found on [Greasy Fork](https://greasyfork.org/en/scripts/575160)
