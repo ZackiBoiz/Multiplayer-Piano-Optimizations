@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Sounds]
 // @namespace    https://tampermonkey.net/
-// @version      1.7.13
+// @version      1.7.14
 // @description  Play sounds when users join, leave, or mention you in Multiplayer Piano
 // @author       zackiboiz
 // @contributor  cheezburger0
@@ -497,7 +497,12 @@
         });
 
         $("#always-mention").prop("checked", localStorage.alwaysMention === "true");
-        MPP.modal.openModal("#soundpack-modal");
+        if (MPP?.modal?.openModal) {
+            MPP.modal.openModal("#soundpack-modal");
+        } else {
+            $("#modal").fadeIn(250);
+            $modal.show();
+        }
     }
 
     $btn.on("click", showModal);
