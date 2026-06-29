@@ -47,6 +47,7 @@
     "sadge": "webp",
     "thisisfine": "webp",
     "lookup": "webp",
+    "amogus": "webp", // *
     "rocksussy": "webp",
     "o7": "webp",
     "alert": "webp",
@@ -89,6 +90,7 @@
     "edm": "webp",
     "kekwait": "webp",
     "pain": "webp",
+    "reallygunpull": "webp", // *
     "reallymad": "webp",
     "mhmm": "webp",
     "catdriving": "webp",
@@ -223,6 +225,7 @@
     "rapthis": "avif",
     "0": "avif",
     "saved": "avif",
+    "keepyourselfsafe": "avif", // *
     "liemeter": "avif",
     "truthmeter": "avif",
     "3": "avif",
@@ -280,6 +283,7 @@
     "whomegalul": "avif",
     "hesright": "avif",
     "amonge": "avif",
+    "programming": "avif", // *
     "chainmeowboom": "avif",
     "spotted": "avif", // overlay
     "spottedwide": "avif", // overlay
@@ -298,6 +302,7 @@
     "photo": "avif", // overlay
     "petpet": "avif", // overlay
     "soypoint": "avif", // overlay
+    "gunpoint": "avif", // overlay; *
     "lightning": "avif", // overlay
     "hammerbonk": "avif", // overlay
     "lero": "avif", // overlay
@@ -351,8 +356,8 @@
     "blink": "webp",
     "blueless": "avif",
     "huzzah": "avif",
-    "boink": "avif",
-    "boinkwide": "avif",
+    "boink": "avif", // *
+    "boinkwide": "avif", // *
     "lule": "avif",
     "tuckk": "avif",
     "pagman": "avif",
@@ -393,6 +398,7 @@
     "lidl": "avif",
     "flooshed": "avif",
     "microwave": "avif", // overlay
+    "now": "avif", // *
     "er": "avif",
     "noidontthinkso": "avif",
     "trynottolaugh": "avif",
@@ -446,8 +452,9 @@
     "question": "avif",
     "cease": "avif",
     "reallyinnocent": "avif",
+    "fu": "avif", // *
     "scuba": "avif",
-    "wtf": "avif",
+    "wtf": "avif", // *
     "grrr": "avif",
     "buhbye": "avif",
     "catlick": "avif",
@@ -456,5 +463,13 @@
     "bop": "avif",
     "weewoo": "avif",
     "ygeah": "avif",
-    "aintxnorway": "avif" // cheezburger0
+    "aintxnorway": "avif", // cheezburger0
+    "blobcatdance": "avif",
+    "frogdance": "avif",
+    "letitride": "avif",
+    "llo": "avif",
+    "hewwoooooooo": "avif",
+    "look": "avif",
+    "em": "avif",
+    "ouhh": "avif"
 }
