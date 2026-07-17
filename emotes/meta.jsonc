@@ -474,5 +474,11 @@
     "ouhh": "avif",
     "meandyou": "avif", // *
     "glorpsmash": "avif",
-    "kevin": "png" // kevin
+    "kevin": "png", // kevin
+    "xbx": "avif",
+    "xpx": "avif",
+    "xqx": "avif",
+    "xdt": "avif",
+    "xddtime": "avif",
+    "xdttime": "avif"
 }
