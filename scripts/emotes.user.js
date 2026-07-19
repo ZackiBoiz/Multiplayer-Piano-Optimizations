@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Multiplayer Piano Optimizations [Emotes]
 // @namespace    https://tampermonkey.net/
-// @version      1.7.6
+// @version      1.7.7
 // @description  Display emoticons and colors in chat!
 // @author       zackiboiz
 // @contributor  sophb-ccjt <sophb.code@proton.me>
@@ -90,6 +90,149 @@
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function parseJSONC(input, filteredTags = ["*"]) {
+        const json = stripJSONC(input, filteredTags);
+        return JSON.parse(json);
+    }
+
+    function stripJSONC(input, filteredTags = []) {
+        const filtered = new Set(
+            Array.isArray(filteredTags) ? filteredTags : [filteredTags]
+        );
+
+        let out = "";
+        let i = 0;
+
+        let inString = false;
+        let stringQuote = "";
+        let escaped = false;
+        let inBlockComment = false;
+
+        while (i < input.length) {
+            const ch = input[i];
+            const next = input[i + 1];
+
+            if (inBlockComment) {
+                if (ch === "*" && next === "/") {
+                    inBlockComment = false;
+                    i += 2;
+                } else {
+                    i++;
+                }
+                continue;
+            }
+
+            if (inString) {
+                out += ch;
+                if (escaped) {
+                    escaped = false;
+                } else if (ch === "\\") {
+                    escaped = true;
+                } else if (ch === stringQuote) {
+                    inString = false;
+                }
+                i++;
+                continue;
+            }
+
+            if (ch === '"' || ch === "'") {
+                inString = true;
+                stringQuote = ch;
+                out += ch;
+                i++;
+                continue;
+            }
+
+            if (ch === "/" && next === "*") {
+                inBlockComment = true;
+                i += 2;
+                continue;
+            }
+
+            if (ch === "/" && next === "/") {
+                const lineStart = out.lastIndexOf("\n") + 1;
+                const lineBeforeComment = out.slice(lineStart);
+                const trimmed = lineBeforeComment.trimEnd();
+
+                const propMatch = trimmed.match(
+                    /(?:^|,)\s*(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*:\s*.*$/
+                );
+
+                if (propMatch) {
+                    const commentEnd = input.indexOf("\n", i);
+                    const commentText = input.slice(i + 2, commentEnd === -1 ? input.length : commentEnd);
+                    const tags = commentText
+                        .split(";")
+                        .map(s => s.trim())
+                        .filter(Boolean);
+
+                    if (tags.some(tag => filtered.has(tag))) {
+                        out = out.slice(0, lineStart);
+                        while (i < input.length && input[i] !== "\n") i++;
+                        continue;
+                    }
+                }
+
+                while (i < input.length && input[i] !== "\n") i++;
+                continue;
+            }
+
+            out += ch;
+            i++;
+        }
+
+        return removeTrailingCommas(out);
+    }
+
+    function removeTrailingCommas(input) {
+        let out = "";
+        let i = 0;
+
+        let inString = false;
+        let stringQuote = "";
+        let escaped = false;
+
+        while (i < input.length) {
+            const ch = input[i];
+
+            if (inString) {
+                out += ch;
+                if (escaped) {
+                    escaped = false;
+                } else if (ch === "\\") {
+                    escaped = true;
+                } else if (ch === stringQuote) {
+                    inString = false;
+                }
+                i++;
+                continue;
+            }
+
+            if (ch === '"' || ch === "'") {
+                inString = true;
+                stringQuote = ch;
+                out += ch;
+                i++;
+                continue;
+            }
+
+            if (ch === ",") {
+                let j = i + 1;
+                while (j < input.length && /\s/.test(input[j])) j++;
+
+                if (input[j] === "}" || input[j] === "]") {
+                    i++;
+                    continue;
+                }
+            }
+
+            out += ch;
+            i++;
+        }
+
+        return out;
     }
 
     await sleep(1000);
@@ -204,12 +347,29 @@
         }
 
         async #loadEmotesMeta() {
-            const res = await fetch(`${this.baseUrl}/emotes/meta.jsonc?_=${Date.now()}`);
+            const res = await fetch(`${this.baseUrl}/emotes/meta.jsonc?_=${Date.now()}`, {
+                referrerPolicy: "no-referrer",
+                signal: AbortSignal.timeout(8000)
+            });
             if (!res.ok) throw new Error(`Failed to load emote metadata: ${res.status}`);
 
             const raw = await res.text();
-            const cleaned = raw.replace(/(\/\*[\s\S]*?\*\/|\/\/.*?$)/gm, "").trim();
-            this.emotes = JSON.parse(cleaned);
+            const pairs = parseJSONC(raw, ["!"]);
+            const validCode = /^[A-Za-z0-9_.-]+$/;
+            const validExt = /^(?:png|gif|webp|jpe?g|avif|heif|tiff|bmp|svg)$/i;
+
+            const next = Object.fromEntries(
+                Object.entries(pairs)
+                    .filter(([name, ext]) =>
+                        validCode.test(name) &&
+                        typeof ext === "string" &&
+                        validExt.test(ext)
+                    )
+            );
+
+            if (Object.keys(next).length) {
+                this.emotes = next;
+            }
         }
 
         #buildTokenRegex() {
@@ -312,7 +472,10 @@
 
         #setImgSrc(img, name) {
             this.#getEmoteUrl(name).then(url => {
-                if (url) img.src = url;
+                if (url) {
+                    img.referrerPolicy = "no-referrer";
+                    img.src = url;
+                }
             }).catch(() => { });
         }
 
@@ -742,6 +905,7 @@
                     img.style.imageRendering = "auto";
                     img.alt = img.title = tokenText;
                     img.dataset.emote = name;
+                    img.referrerPolicy = "no-referrer";
                     img.src = "";
                     item.appendChild(img);
 
