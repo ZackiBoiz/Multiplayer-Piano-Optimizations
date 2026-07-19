@@ -480,5 +480,6 @@
     "xqx": "avif",
     "xdt": "avif",
     "xddtime": "avif",
-    "xdttime": "avif"
+    "xdttime": "avif",
+    "dax": "webp" // dax; !
 }
