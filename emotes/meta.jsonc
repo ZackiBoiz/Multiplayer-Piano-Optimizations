@@ -481,5 +481,9 @@
     "xdt": "avif",
     "xddtime": "avif",
     "xdttime": "avif",
-    "dax": "webp" // dax; !
+    "dax": "webp", // dax; !
+    "4head": "avif",
+    "2head": "avif",
+    "1head": "avif",
+    "0head": "avif"
 }
